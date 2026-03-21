@@ -70,8 +70,9 @@ class PatternAnalyzer:
         }
 
         weekend_count = daily.get("Saturday", 0) + daily.get("Sunday", 0)
-        total_count = sum(daily.values()) or 1
-        weekend_ratio = round(weekend_count / total_count, 3)
+        total_count = sum(daily.values())
+        weekend_ratio = round(weekend_count / total_count, 3) if total_count > 0 else 0.0
+        weekday_count = total_count - weekend_count
 
         return {
             "peak_hours": peak_hours,
@@ -79,6 +80,8 @@ class PatternAnalyzer:
             "hourly_distribution": hourly_distribution,
             "daily_distribution": daily_distribution,
             "weekend_ratio": weekend_ratio,
+            "weekday_events": weekday_count,
+            "weekend_events": weekend_count,
         }
 
     # ------------------------------------------------------------------
