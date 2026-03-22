@@ -2,24 +2,44 @@
 
 ## Initial Setup (First Time Only)
 
-### 1. Install Python Dependencies
+### 1. Clone and Create Virtual Environment
+```bash
+git clone https://github.com/woobly-bop/AI-Assisted-GitHub-Activity-Pattern-Analyzer.git
+cd AI-Assisted-GitHub-Activity-Pattern-Analyzer
+
+# Create a virtual environment
+python -m venv venv
+
+# Activate it
+# Windows:
+venv\Scripts\activate
+# macOS / Linux:
+source venv/bin/activate
+```
+
+### 2. Install Python Dependencies
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-### 2. Configure GitHub Token
-Edit the `.env` file and add your GitHub Personal Access Token:
+### 3. Configure GitHub Token
+Copy the example environment file and add your token:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and replace the placeholder with your GitHub Personal Access Token:
 ```env
 GITHUB_TOKEN=your_github_personal_access_token_here
 ```
 
 To create a GitHub token:
 1. Go to https://github.com/settings/tokens
-2. Click "Generate new token (classic)"
+2. Click **Generate new token (classic)**
 3. Select scopes: `repo`, `user`
 4. Copy the generated token and paste it in `.env`
 
-### 3. Run the Application
+### 4. Run the Application
 ```bash
 python run.py
 ```
@@ -40,6 +60,7 @@ http://127.0.0.1:5000
 
 ### "Module not found" error
 ```bash
+# Make sure your virtual environment is activated, then:
 pip install -r backend/requirements.txt
 ```
 
@@ -51,6 +72,12 @@ pip install -r backend/requirements.txt
 ### Flask app won't start
 - Check if port 5000 is already in use
 - Change PORT in `.env` file to use a different port
+
+### Tests failing
+```bash
+cd backend
+python -m unittest tests.test_analyzer -v
+```
 
 ## Next Steps
 
@@ -67,6 +94,8 @@ pip install -r backend/requirements.txt
 ✅ **Time Patterns** - Peak hours and most active days
 ✅ **Activity Types** - Push, PR, Issues, etc.
 ✅ **AI Insights** - Developer profiling and recommendations
+✅ **Placement Score** - Readiness assessment (0–100)
+✅ **Comparative Analysis** - Benchmarked against community averages
 
 ## API Testing
 
