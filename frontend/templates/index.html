@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Assisted GitHub Activity Pattern Analyzer - Analyze and visualize GitHub user activity patterns with AI-powered insights">
+    <title>GitHub Activity Pattern Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="gradient-text">GitHub Activity</span> Pattern Analyzer
+                </h1>
+                <p class="subtitle">Uncover insights from GitHub activity using AI-powered analysis</p>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-container">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="username-input" 
+                        placeholder="Enter GitHub username..."
+                        aria-label="GitHub username"
+                    >
+                    <button id="analyze-btn" class="btn-primary">
+                        <span class="btn-text">Analyze Activity</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+                <p class="helper-text">Example: octocat, torvalds, gvanrossum</p>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading hidden">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Analyzing GitHub activity...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error hidden">
+            <div class="error-icon">⚠️</div>
+            <p class="error-message" id="error-message"></p>
+        </div>
+
+        <!-- Results Section -->
+        <section id="results" class="results hidden">
+            <!-- User Profile -->
+            <div class="card profile-card">
+                <div class="profile-header">
+                    <img id="user-avatar" src="" alt="User avatar" class="avatar">
+                    <div class="profile-info">
+                        <h2 id="user-name" class="profile-name"></h2>
+                        <p id="user-bio" class="profile-bio"></p>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-value" id="user-repos">0</span>
+                                <span class="stat-label">Repositories</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="user-followers">0</span>
+                                <span class="stat-label">Followers</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="user-following">0</span>
+                                <span class="stat-label">Following</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Summary -->
+            <div class="card insights-card">
+                <h3 class="card-title">📊 Activity Summary</h3>
+                <p id="insights-summary" class="insights-summary"></p>
+            </div>
+
+            <!-- Grid Layout for Charts and Stats -->
+            <div class="grid-layout">
+                <!-- Productivity Metrics -->
+                <div class="card">
+                    <h3 class="card-title">⚡ Productivity Metrics</h3>
+                    <div id="productivity-metrics" class="metrics-list"></div>
+                </div>
+
+                <!-- Language Distribution -->
+                <div class="card">
+                    <h3 class="card-title">💻 Language Distribution</h3>
+                    <div id="language-chart" class="chart-container"></div>
+                </div>
+
+                <!-- Time Patterns -->
+                <div class="card">
+                    <h3 class="card-title">🕐 Activity Time Patterns</h3>
+                    <div id="time-patterns" class="patterns-list"></div>
+                </div>
+
+                <!-- Activity Types -->
+                <div class="card">
+                    <h3 class="card-title">📈 Activity Types</h3>
+                    <div id="activity-types" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Insights and Recommendations -->
+            <div class="card recommendations-card">
+                <h3 class="card-title">💡 Insights & Recommendations</h3>
+                <div id="recommendations" class="recommendations-list"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
