@@ -22,6 +22,7 @@
 - `MAX_EVENTS` - Maximum events to fetch (default: 300)
 - `ANALYSIS_LOOKBACK_DAYS` - Days to analyze (default: 90)
 - `CONFIDENCE_THRESHOLD` - ML model threshold (default: 0.7)
+- `CACHE_TTL_SECONDS` - In-memory cache lifetime (default: 600)
 
 ---
 
@@ -30,12 +31,14 @@
 
 **Main Class:** `GitHubAPI`
 
+**Key Classes:** `GitHubAPI`, `APICache`, `GitHubAPIError`
+
 **Methods:**
-- `fetch_user_activity(username)` - Comprehensive user data
+- `fetch_user_activity(username)` - Comprehensive user data (cached)
 - `_get_user_profile(username)` - User profile info
-- `_get_user_events(username)` - Recent events
+- `_get_user_events(username)` - Recent events (fetched once, reused)
 - `_get_user_repos(username)` - User repositories
-- `_get_contribution_stats(username)` - Contribution metrics
+- `_build_contribution_stats(events)` - Pure computation from events (no extra API call)
 
 ---
 
@@ -55,14 +58,15 @@
 ---
 
 ### 5. `ml_model.py` - AI/ML Models
-**Purpose:** Machine learning models for predictions and profiling
+**Purpose:** Machine learning models for predictions and profiling (sklearn-backed with rule-based fallback)
 
 **Key Classes:**
 
 #### `ActivityPredictor`
-- Predicts future activity patterns
-- Determines likely next event types
-- Analyzes productivity trends
+- Predicts next event type using `RandomForestClassifier`
+- Predicts productivity trend using `LogisticRegression`
+- Falls back to rule-based logic when sklearn is unavailable
+- Trains automatically on synthetic data at startup
 
 #### `DeveloperProfiler`
 - Creates comprehensive developer profiles
@@ -83,6 +87,8 @@
 - Activity insights
 - Language expertise insights
 - Productivity analysis
+- Comparative insights against community benchmarks
+- Placement readiness score (0–100)
 - Personalized recommendations
 
 ---
@@ -180,7 +186,8 @@ Flask==3.0.0
 Flask-CORS==4.0.0
 requests==2.31.0
 python-dotenv==1.0.0
-numpy==1.26.2
+numpy>=1.24.0
+scikit-learn>=1.3.0
 ```
 
 ---
@@ -251,8 +258,8 @@ Excludes from Git:
 
 ## Performance Considerations
 
-- **Caching:** Consider caching GitHub API responses
-- **Async Processing:** Use background tasks for long analyses
-- **Pagination:** Limit initial data fetch
+- **Caching:** In-memory TTL cache (`APICache`) avoids repeated GitHub API calls (default: 10 min)
+- **Deduplication:** Events are fetched once and reused for contribution stats
+- **Pagination:** Configurable `MAX_EVENTS` limits data volume
 - **Lazy Loading:** Load charts/components on demand
 - **Compression:** Enable gzip for API responses

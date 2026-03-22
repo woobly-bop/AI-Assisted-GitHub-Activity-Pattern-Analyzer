@@ -1,140 +1,273 @@
 """
-Pattern Analysis Logic
-Analyzes GitHub activity data to identify patterns and trends
+Pattern Analysis Engine
+Processes raw GitHub data into structured patterns consumed by ML models and insights.
+
+Data flow:  github_api -> analyzer -> ml_model -> insights
 """
-from datetime import datetime, timedelta
+from __future__ import annotations
+
 from collections import Counter, defaultdict
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from utils import safe_divide, percentage
 
 
 class PatternAnalyzer:
-    """Analyzes GitHub activity patterns"""
-    
-    def analyze_patterns(self, user_data):
+    """Transforms raw GitHub user data into actionable pattern dictionaries."""
+
+    DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    def analyze(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Analyze user activity data for patterns
-        
+        Run the full analysis pipeline on raw user data.
+
         Args:
-            user_data (dict): User activity data from GitHub API
-            
+            user_data: Output of GitHubAPI.fetch_user_activity().
+
         Returns:
-            dict: Analyzed patterns and statistics
+            A dict with keys: time_patterns, activity_patterns, language_patterns,
+            repository_patterns, collaboration_patterns, productivity_metrics.
         """
-        patterns = {
-            'time_patterns': self._analyze_time_patterns(user_data['events']),
-            'activity_patterns': self._analyze_activity_patterns(user_data['events']),
-            'repository_patterns': self._analyze_repository_patterns(user_data['repositories']),
-            'language_patterns': self._analyze_language_patterns(user_data['repositories']),
-            'collaboration_patterns': self._analyze_collaboration_patterns(user_data['events']),
-            'productivity_metrics': self._calculate_productivity_metrics(user_data)
+        events: List[Dict] = user_data.get("events", [])
+        repos: List[Dict] = user_data.get("repositories", [])
+        profile: Dict = user_data.get("profile", {})
+
+        return {
+            "time_patterns": self._analyze_time_patterns(events),
+            "activity_patterns": self._analyze_activity_patterns(events),
+            "language_patterns": self._analyze_language_patterns(repos),
+            "repository_patterns": self._analyze_repository_patterns(repos, profile),
+            "collaboration_patterns": self._analyze_collaboration_patterns(events),
+            "productivity_metrics": self._analyze_productivity_metrics(events, repos),
         }
-        
-        return patterns
-    
-    def _analyze_time_patterns(self, events):
-        """Analyze temporal patterns in activity"""
-        hour_distribution = Counter()
-        day_distribution = Counter()
-        
+
+    # ------------------------------------------------------------------
+    # Time patterns
+    # ------------------------------------------------------------------
+
+    def _analyze_time_patterns(self, events: List[Dict]) -> Dict[str, Any]:
+        hourly: Counter = Counter()
+        daily: Counter = Counter()
+
         for event in events:
-            created_at = datetime.strptime(event['created_at'], '%Y-%m-%dT%H:%M:%SZ')
-            hour_distribution[created_at.hour] += 1
-            day_distribution[created_at.strftime('%A')] += 1
-        
-        # Find peak hours
-        peak_hours = sorted(hour_distribution.items(), key=lambda x: x[1], reverse=True)[:3]
-        
-        return {
-            'hour_distribution': dict(hour_distribution),
-            'day_distribution': dict(day_distribution),
-            'peak_hours': [{'hour': h, 'count': c} for h, c in peak_hours],
-            'most_active_day': max(day_distribution.items(), key=lambda x: x[1])[0] if day_distribution else None
+            dt = self._parse_event_time(event)
+            if dt is None:
+                continue
+            hourly[dt.hour] += 1
+            daily[dt.strftime("%A")] += 1
+
+        peak_hours = [
+            {"hour": hour, "count": count}
+            for hour, count in hourly.most_common(5)
+        ]
+
+        most_active_day: Optional[str] = daily.most_common(1)[0][0] if daily else None
+
+        hourly_distribution = dict(sorted(hourly.items()))
+        daily_distribution = {
+            day: daily.get(day, 0) for day in self.DAY_NAMES
         }
-    
-    def _analyze_activity_patterns(self, events):
-        """Analyze types of activities"""
-        event_types = Counter()
-        
+
+        weekend_count = daily.get("Saturday", 0) + daily.get("Sunday", 0)
+        total_count = sum(daily.values()) or 1
+        weekend_ratio = round(weekend_count / total_count, 3)
+
+        return {
+            "peak_hours": peak_hours,
+            "most_active_day": most_active_day,
+            "hourly_distribution": hourly_distribution,
+            "daily_distribution": daily_distribution,
+            "weekend_ratio": weekend_ratio,
+        }
+
+    # ------------------------------------------------------------------
+    # Activity patterns
+    # ------------------------------------------------------------------
+
+    def _analyze_activity_patterns(self, events: List[Dict]) -> Dict[str, Any]:
+        type_counter: Counter = Counter()
         for event in events:
-            event_types[event['type']] += 1
-        
+            type_counter[event.get("type", "Unknown")] += 1
+
+        total = sum(type_counter.values())
+
         return {
-            'event_type_distribution': dict(event_types),
-            'most_common_activity': event_types.most_common(1)[0] if event_types else None,
-            'activity_diversity': len(event_types)
+            "event_type_distribution": dict(type_counter),
+            "event_type_percentages": {
+                etype: percentage(count, total) for etype, count in type_counter.items()
+            },
+            "activity_diversity": len(type_counter),
+            "total_events": total,
+            "most_common_event": type_counter.most_common(1)[0][0] if type_counter else None,
         }
-    
-    def _analyze_repository_patterns(self, repositories):
-        """Analyze repository-related patterns"""
-        if not repositories:
-            return {}
-        
-        total_stars = sum(repo.get('stargazers_count', 0) for repo in repositories)
-        total_forks = sum(repo.get('forks_count', 0) for repo in repositories)
-        
-        # Sort by various metrics
-        most_starred = sorted(repositories, key=lambda x: x.get('stargazers_count', 0), reverse=True)[:5]
-        most_recent = sorted(repositories, key=lambda x: x.get('updated_at', ''), reverse=True)[:5]
-        
-        return {
-            'total_repositories': len(repositories),
-            'total_stars': total_stars,
-            'total_forks': total_forks,
-            'average_stars': total_stars / len(repositories) if repositories else 0,
-            'most_starred_repos': [{'name': r['name'], 'stars': r['stargazers_count']} for r in most_starred],
-            'recently_updated': [{'name': r['name'], 'updated': r['updated_at']} for r in most_recent]
-        }
-    
-    def _analyze_language_patterns(self, repositories):
-        """Analyze programming language usage"""
-        languages = Counter()
-        
-        for repo in repositories:
-            lang = repo.get('language')
+
+    # ------------------------------------------------------------------
+    # Language patterns
+    # ------------------------------------------------------------------
+
+    def _analyze_language_patterns(self, repos: List[Dict]) -> Dict[str, Any]:
+        lang_counter: Counter = Counter()
+        lang_bytes: Counter = Counter()
+
+        for repo in repos:
+            lang = repo.get("language")
             if lang:
-                languages[lang] += 1
-        
-        return {
-            'language_distribution': dict(languages),
-            'primary_language': languages.most_common(1)[0][0] if languages else None,
-            'language_diversity': len(languages)
+                lang_counter[lang] += 1
+                lang_bytes[lang] += repo.get("size", 0)
+
+        total_repos_with_lang = sum(lang_counter.values()) or 1
+        distribution = {
+            lang: percentage(count, total_repos_with_lang)
+            for lang, count in lang_counter.most_common()
         }
-    
-    def _analyze_collaboration_patterns(self, events):
-        """Analyze collaboration and interaction patterns"""
-        collaborations = defaultdict(int)
-        
+
+        primary_language = lang_counter.most_common(1)[0][0] if lang_counter else None
+
+        return {
+            "primary_language": primary_language,
+            "language_distribution": distribution,
+            "language_repo_counts": dict(lang_counter),
+            "language_diversity": len(lang_counter),
+            "top_languages": [lang for lang, _ in lang_counter.most_common(5)],
+        }
+
+    # ------------------------------------------------------------------
+    # Repository patterns
+    # ------------------------------------------------------------------
+
+    def _analyze_repository_patterns(
+        self, repos: List[Dict], profile: Dict
+    ) -> Dict[str, Any]:
+        total_stars = sum(r.get("stargazers_count", 0) for r in repos)
+        total_forks = sum(r.get("forks_count", 0) for r in repos)
+        total_repos = len(repos)
+        avg_stars = safe_divide(total_stars, total_repos)
+        avg_forks = safe_divide(total_forks, total_repos)
+
+        owned = [r for r in repos if not r.get("fork", False)]
+        forked = [r for r in repos if r.get("fork", False)]
+
+        has_description = sum(1 for r in repos if r.get("description"))
+        has_topics = sum(1 for r in repos if r.get("topics"))
+
+        return {
+            "total_repositories": total_repos,
+            "owned_repositories": len(owned),
+            "forked_repositories": len(forked),
+            "total_stars": total_stars,
+            "total_forks": total_forks,
+            "average_stars": round(avg_stars, 2),
+            "average_forks": round(avg_forks, 2),
+            "repos_with_description": has_description,
+            "repos_with_topics": has_topics,
+            "public_repos_profile": profile.get("public_repos", total_repos),
+        }
+
+    # ------------------------------------------------------------------
+    # Collaboration patterns
+    # ------------------------------------------------------------------
+
+    def _analyze_collaboration_patterns(self, events: List[Dict]) -> Dict[str, Any]:
+        pr_events = 0
+        pr_review_events = 0
+        issue_events = 0
+        issue_comment_events = 0
+        fork_events = 0
+        watch_events = 0
+
         for event in events:
-            if event['type'] in ['PullRequestEvent', 'IssueCommentEvent', 'PullRequestReviewEvent']:
-                repo = event.get('repo', {}).get('name')
-                if repo:
-                    collaborations[repo] += 1
-        
+            etype = event.get("type", "")
+            if etype == "PullRequestEvent":
+                pr_events += 1
+            elif etype == "PullRequestReviewEvent":
+                pr_review_events += 1
+            elif etype == "IssuesEvent":
+                issue_events += 1
+            elif etype == "IssueCommentEvent":
+                issue_comment_events += 1
+            elif etype == "ForkEvent":
+                fork_events += 1
+            elif etype == "WatchEvent":
+                watch_events += 1
+
+        collaboration_frequency = (
+            pr_events + pr_review_events + issue_events + issue_comment_events
+        )
+
+        total = len(events) or 1
+        collaboration_ratio = round(collaboration_frequency / total, 3)
+
         return {
-            'collaborative_repos': dict(collaborations),
-            'collaboration_frequency': sum(collaborations.values()),
-            'most_collaborated_repo': max(collaborations.items(), key=lambda x: x[1])[0] if collaborations else None
+            "pull_requests": pr_events,
+            "pr_reviews": pr_review_events,
+            "issues": issue_events,
+            "issue_comments": issue_comment_events,
+            "forks": fork_events,
+            "watches": watch_events,
+            "collaboration_frequency": collaboration_frequency,
+            "collaboration_ratio": collaboration_ratio,
         }
-    
-    def _calculate_productivity_metrics(self, user_data):
-        """Calculate productivity metrics"""
-        events = user_data['events']
-        contributions = user_data['contributions']
-        
-        if not events:
-            return {}
-        
-        # Calculate daily average
-        active_days = len(contributions['active_days'])
-        daily_average = len(events) / active_days if active_days > 0 else 0
-        
-        # Calculate commit frequency
-        push_events = [e for e in events if e['type'] == 'PushEvent']
-        total_commits = sum(len(e.get('payload', {}).get('commits', [])) for e in push_events)
-        
+
+    # ------------------------------------------------------------------
+    # Productivity metrics
+    # ------------------------------------------------------------------
+
+    def _analyze_productivity_metrics(
+        self, events: List[Dict], repos: List[Dict]
+    ) -> Dict[str, Any]:
+        active_dates: set = set()
+        push_commits = 0
+
+        for event in events:
+            dt = self._parse_event_time(event)
+            if dt is None:
+                continue
+            active_dates.add(dt.date())
+
+            if event.get("type") == "PushEvent":
+                payload = event.get("payload", {})
+                push_commits += payload.get("size", 0)
+
+        active_days = len(active_dates)
+        total_events = len(events)
+
+        if active_dates:
+            date_range = (max(active_dates) - min(active_dates)).days + 1
+        else:
+            date_range = 1
+
+        commits_per_day = safe_divide(push_commits, date_range)
+        daily_average_events = safe_divide(total_events, date_range)
+        consistency_ratio = safe_divide(active_days, date_range)
+
+        repos_contributed: set = set()
+        for event in events:
+            repo = event.get("repo", {})
+            if repo:
+                repos_contributed.add(repo.get("name", ""))
+
         return {
-            'total_events': len(events),
-            'active_days': active_days,
-            'daily_average_events': round(daily_average, 2),
-            'total_commits': total_commits,
-            'commits_per_day': round(total_commits / active_days, 2) if active_days > 0 else 0
+            "total_events": total_events,
+            "active_days": active_days,
+            "date_range_days": date_range,
+            "push_commits": push_commits,
+            "commits_per_day": round(commits_per_day, 2),
+            "daily_average_events": round(daily_average_events, 2),
+            "consistency_ratio": round(consistency_ratio, 3),
+            "repositories_contributed": len(repos_contributed),
         }
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_event_time(event: Dict) -> Optional[datetime]:
+        raw = event.get("created_at")
+        if not raw:
+            return None
+        try:
+            return datetime.strptime(raw, "%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError, TypeError):
+            return None
