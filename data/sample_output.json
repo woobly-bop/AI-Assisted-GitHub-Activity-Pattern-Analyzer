@@ -1,0 +1,25 @@
+{
+  "username": "octocat",
+  "profile": {
+    "login": "octocat",
+    "name": "The Octocat",
+    "bio": "GitHub mascot and assistant",
+    "public_repos": 8,
+    "followers": 5000,
+    "following": 0
+  },
+  "total_events": 250,
+  "active_days": 65,
+  "patterns": {
+    "most_active_day": "Wednesday",
+    "peak_hours": [14, 15, 16],
+    "primary_language": "JavaScript",
+    "total_commits": 425,
+    "most_common_activity": "PushEvent"
+  },
+  "insights": {
+    "activity_level": "highly_active",
+    "expertise_level": "expert",
+    "collaboration_style": "team_player"
+  }
+}
