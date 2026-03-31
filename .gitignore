@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Local tooling / scratch
+_frontend_backup/
+
 # Distribution / packaging
 .Python
 build/
@@ -15,6 +18,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/

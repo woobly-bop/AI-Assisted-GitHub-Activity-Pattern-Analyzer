@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --color-border: hsl(240 10% 18%);
+  --color-input: hsl(240 10% 18%);
+  --color-ring: hsl(263 70% 58%);
+  --color-background: hsl(240 12% 6%);
+  --color-foreground: hsl(0 0% 98%);
+  --color-primary: hsl(263 70% 58%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-muted: hsl(240 8% 16%);
+  --color-muted-foreground: hsl(240 6% 58%);
+  --color-card: hsl(240 10% 10% / 0.72);
+  --color-card-foreground: hsl(0 0% 98%);
+  --color-accent: hsl(217 91% 60%);
+  --color-destructive: hsl(0 72% 51%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased min-h-screen font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Light theme overrides */
+html.light {
+  --color-border: hsl(240 6% 88%);
+  --color-input: hsl(240 6% 88%);
+  --color-background: hsl(0 0% 98%);
+  --color-foreground: hsl(240 10% 10%);
+  --color-muted: hsl(240 5% 94%);
+  --color-muted-foreground: hsl(240 4% 40%);
+  --color-card: hsl(0 0% 100% / 0.85);
+  --color-card-foreground: hsl(240 10% 10%);
+}
+
+/* Glass panel */
+.glass {
+  background: linear-gradient(
+    135deg,
+    hsl(240 12% 12% / 0.72) 0%,
+    hsl(240 10% 8% / 0.55) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(240 10% 22% / 0.65);
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.04) inset,
+    0 24px 48px -12px hsl(0 0% 0% / 0.45);
+}
+
+html.light .glass {
+  background: linear-gradient(
+    135deg,
+    hsl(0 0% 100% / 0.85) 0%,
+    hsl(240 10% 98% / 0.72) 100%
+  );
+  border: 1px solid hsl(240 6% 90% / 0.9);
+  box-shadow: 0 24px 48px -12px hsl(240 10% 10% / 0.08);
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, hsl(263 90% 72%), hsl(217 95% 68%), hsl(190 80% 60%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, hsl(263 70% 40% / 0.35), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, hsl(217 90% 50% / 0.2), transparent),
+    radial-gradient(ellipse 50% 30% at 0% 0%, hsl(280 70% 45% / 0.15), transparent);
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(240 10% 14%) 0%,
+    hsl(240 10% 20%) 50%,
+    hsl(240 10% 14%) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
